@@ -1,1 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Swipe Right on the Bite</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --primary: #2c3e50;
+            --correct: #27ae60;
+            --wrong: #e74c3c;
+            --neutral: #95a5a6;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none; /* Prevents mobile scrolling while swiping */
+        }
+        #game-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            max-height: 800px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+        .screen.active {
+            display: flex;
+        }
+        /* Top Bar */
+        #top-bar {
+            width: 100%;
+            padding: 15px 20px;
+            box-sizing: border-box;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #rep-bar-container {
+            width: 100%;
+            height: 15px;
+            background: #444;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #rep-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--correct);
+            transition: width 0.3s ease, background 0.3s ease;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        #timer {
+            transition: color 0.3s ease;
+        }
+        .danger-time {
+            color: var(--wrong) !important;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        /* Main Image Area */
+        #image-area {
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #eee;
+            position: relative;
+        }
+        #patient-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            user-select: none;
+            pointer-events: none;
+        }
+        /* Controls / Legend */
+        #controls {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background: #ecf0f1;
+            color: var(--primary);
+            transition: background 0.2s;
+        }
+        .btn:active { background: #bdc3c7; }
+        
+        /* Typography */
+        h1 { font-size: 1.5rem; color: var(--primary); margin-bottom: 10px; }
+        p { font-size: 1rem; color: #555; line-height: 1.5; margin-bottom: 20px; }
+        .start-btn, .restart-btn {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            background: var(--correct);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
 
+<div id="game-container">
+    
+    <!-- LEVEL 0: TUTORIAL SCREEN -->
+    <div id="screen-start" class="screen active">
+        <h1>Swipe Right on the Bite</h1>
+        <p>Welcome! Swipe <strong>LEFT</strong> for extraction, <strong>RIGHT</strong> for IPR, <strong>UP</strong> to choose nothing, and <strong>DOWN</strong> if you don't know.</p>
+        <p>You're on the clock. Don't mess up their smiles!</p>
+        <button class="start-btn" onclick="startGame()">Start Clinic</button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="screen-game" class="screen" style="padding: 0; justify-content: flex-start;">
+        <div id="top-bar">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Clinic Rep</div>
+            <div id="rep-bar-container">
+                <div id="rep-bar"></div>
+            </div>
+            <div class="stats-row">
+                <span id="timer">⏱ 00:30</span>
+                <span id="case-counter">Case 1/5</span>
+            </div>
+        </div>
+
+        <div id="image-area">
+            <!-- These are placeholders. You will swap these URLs with your actual image files -->
+            <img id="patient-image" src="" alt="Patient Case">
+        </div>
+
+        <div id="controls">
+            <button class="btn" onclick="handleInput('up')">⬆️ Nothing</button>
+            <button class="btn" onclick="handleInput('down')">⬇️ Don't Know</button>
+            <button class="btn" onclick="handleInput('left')">⬅️ Extract</button>
+            <button class="btn" onclick="handleInput('right')">IPR ➡️</button>
+        </div>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="screen-end" class="screen">
+        <h1 id="end-title">Game Over</h1>
+        <p id="end-desc"></p>
+        <h2 style="margin-bottom: 5px;">Final Score: <span id="final-score">0</span>%</h2>
+        <p style="font-size: 12px; color: #888; margin-bottom: 30px;">(Pass mark is 80%)</p>
+        <button class="restart-btn" onclick="resetGame()">Play Again</button>
+    </div>
+
+</div>
+
+<script>
+    // Game Data Configuration
+    const cases = [
+        { time: 30, answer: 'left', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+1:+Severe+Crowding' },
+        { time: 25, answer: 'right', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+2:+Deep+Bite' },
+        { time: 20, answer: 'left', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+3:+Missing+Canines' },
+        { time: 15, answer: 'right', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+4:+Mild+Class+III' },
+        { time: 10, answer: 'up', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+5:+Generalized+Spacing' }
+    ];
+
+    // Variables
+    let currentCaseIndex = 0;
+    let score = 0;
+    let timerInterval;
+    let timeRemaining;
+
+    // DOM Elements
+    const screenStart = document.getElementById('screen-start');
+    const screenGame = document.getElementById('screen-game');
+    const screenEnd = document.getElementById('screen-end');
+    const patientImage = document.getElementById('patient-image');
+    const repBar = document.getElementById('rep-bar');
+    const timerDisplay = document.getElementById('timer');
+    const caseCounter = document.getElementById('case-counter');
+
+    function startGame() {
+        screenStart.classList.remove('active');
+        screenEnd.classList.remove('active');
+        screenGame.classList.add('active');
+        
+        currentCaseIndex = 0;
+        score = 0;
+        updateRepBar();
+        loadCase();
+    }
+
+    function loadCase() {
+        if (currentCaseIndex >= cases.length) {
+            endGame();
+            return;
+        }
+
+        const currentCase = cases[currentCaseIndex];
+        patientImage.src = currentCase.image;
+        caseCounter.innerText = `Case ${currentCaseIndex + 1}/5`;
+        
+        timeRemaining = currentCase.time;
+        updateTimerDisplay();
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(countdown, 1000);
+    }
+
+    function countdown() {
+        timeRemaining--;
+        updateTimerDisplay();
+
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            // Treat timeout as a wrong answer
+            updateScore(-30);
+            nextCase();
+        }
+    }
+
+    function updateTimerDisplay() {
+        timerDisplay.innerText = `⏱ 00:${timeRemaining < 10 ? '0' : ''}${timeRemaining}`;
+        if (timeRemaining <= 5) {
+            timerDisplay.classList.add('danger-time');
+        } else {
+            timerDisplay.classList.remove('danger-time');
+        }
+    }
+
+    function handleInput(direction) {
+        clearInterval(timerInterval);
+        const correctAnswer = cases[currentCaseIndex].answer;
+
+        if (direction === 'down') {
+            updateScore(-5); // I don't know
+        } else if (direction === correctAnswer) {
+            updateScore(20); // Correct
+        } else {
+            updateScore(-30); // Wrong
+        }
+
+        nextCase();
+    }
+
+    function updateScore(points) {
+        score += points;
+        if (score > 100) score = 100;
+        if (score < 0) score = 0;
+        updateRepBar();
+    }
+
+    function updateRepBar() {
+        repBar.style.width = `${score}%`;
+        if (score < 40) {
+            repBar.style.background = 'var(--wrong)';
+        } else if (score < 80) {
+            repBar.style.background = '#f1c40f'; // Yellow warning
+        } else {
+            repBar.style.background = 'var(--correct)';
+        }
+    }
+
+    function nextCase() {
+        currentCaseIndex++;
+        // Short delay so player can see the rep bar move before the next image loads
+        setTimeout(loadCase, 400); 
+    }
+
+    function endGame() {
+        clearInterval(timerInterval);
+        screenGame.classList.remove('active');
+        screenEnd.classList.add('active');
+        
+        document.getElementById('final-score').innerText = score;
+
+        if (score >= 80) { // 4 out of 5 correct minimum
+            document.getElementById('end-title').innerText = "Fantastic!";
+            document.getElementById('end-desc').innerText = "You're an Ortho Wizard! Your schedule is booked out for months and patients love your treatment plans.";
+        } else {
+            document.getElementById('end-title').innerText = "Poor!";
+            document.getElementById('end-desc').innerText = "Yikes. Board of Dentistry is on line 1. You extracted teeth that just needed a little polishing!";
+        }
+    }
+
+    function resetGame() {
+        startGame();
+    }
+
+    // --- SWIPE DETECTION LOGIC ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const imageArea = document.getElementById('image-area');
+
+    imageArea.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, false);
+
+    imageArea.addEventListener('touchend', function(e) {
+        let touchEndX = e.changedTouches[0].screenX;
+        let touchEndY = e.changedTouches[0].screenY;
+        handleSwipeGesture(touchStartX, touchStartY, touchEndX, touchEndY);
+    }, false);
+
+    // Mouse support for desktop testing
+    let isMouseDown = false;
+    imageArea.addEventListener('mousedown', function(e) {
+        isMouseDown = true;
+        touchStartX = e.clientX;
+        touchStartY = e.clientY;
+    });
+
+    imageArea.addEventListener('mouseup', function(e) {
+        if (!isMouseDown) return;
+        isMouseDown = false;
+        let touchEndX = e.clientX;
+        let touchEndY = e.clientY;
+        handleSwipeGesture(touchStartX, touchStartY, touchEndX, touchEndY);
+    });
+
+    function handleSwipeGesture(startX, startY, endX, endY) {
+        let deltaX = endX - startX;
+        let deltaY = endY - startY;
+        let minSwipeDistance = 50; // Needs to be an intentional swipe
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            // Horizontal Swipe
+            if (Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) handleInput('right');
+                else handleInput('left');
+            }
+        } else {
+            // Vertical Swipe
+            if (Math.abs(deltaY) > minSwipeDistance) {
+                if (deltaY > 0) handleInput('down');
+                else handleInput('up');
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
