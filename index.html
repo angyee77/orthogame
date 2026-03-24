@@ -5,35 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Swipe Right on the Bite</title>
     <style>
-        /* Core Layout */
-        body { margin: 0; font-family: sans-serif; background: #333; display: flex; justify-content: center; height: 100vh; touch-action: none; }
-        #app { width: 100%; max-width: 400px; background: white; height: 100%; display: flex; flex-direction: column; position: relative; }
+        /* Core Layout - Fixed for Mobile Viewports */
+        html, body { 
+            margin: 0; 
+            padding: 0;
+            width: 100%;
+            height: 100%; /* Fallback */
+            height: 100dvh; /* Dynamic height to avoid address bar cut-off */
+            overflow: hidden; /* Strictly prevent vertical scrolling */
+            font-family: sans-serif; 
+            background: #333; 
+            touch-action: none; /* Prevents pull-to-refresh and bounce */
+        }
+        
+        #app { 
+            width: 100%; 
+            max-width: 400px; 
+            height: 100%; 
+            background: white; 
+            display: flex; 
+            flex-direction: column; 
+            margin: 0 auto; /* Centers on desktop/tablets */
+        }
+        
         .screen { display: none; flex-direction: column; height: 100%; padding: 20px; text-align: center; box-sizing: border-box; justify-content: center;}
         .active { display: flex; }
         
-        /* Top Bar & UI */
-        .top-bar { background: #2c3e50; color: white; padding: 15px; }
-        .rep-bar-bg { width: 100%; height: 15px; background: #555; border-radius: 10px; margin: 10px 0; overflow: hidden; }
+        /* Top Bar & UI (Set to not shrink) */
+        .top-bar { background: #2c3e50; color: white; padding: 12px 15px; flex: 0 0 auto; }
+        .rep-bar-bg { width: 100%; height: 12px; background: #555; border-radius: 10px; margin: 8px 0; overflow: hidden; }
         #rep-bar { height: 100%; width: 0%; background: #27ae60; transition: width 0.3s, background 0.3s; }
-        .stats { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1rem; }
+        .stats { display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; }
         .danger { color: #e74c3c; animation: pulse 1s infinite; }
         @keyframes pulse { 50% { opacity: 0.5; } }
         
-        /* The "Image" Area */
+        /* The "Image" Area (Set to dynamically fill remaining space) */
         #card-area { 
-            flex-grow: 1; 
+            flex: 1 1 auto; /* Grows to fill space, but allowed to shrink */
+            min-height: 0; /* CRITICAL: Prevents it from pushing buttons off screen */
             background-color: #ecf0f1; 
-            margin: 15px; 
+            margin: 10px; 
             border-radius: 10px; 
             cursor: pointer;
         }
         
-        /* Buttons */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; background: white; border-top: 1px solid #ddd; }
-        button { padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        /* Buttons (Set to not shrink, with tighter padding for small screens) */
+        .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 8px; 
+            padding: 10px 15px 15px 15px; 
+            background: white; 
+            border-top: 1px solid #ddd; 
+            flex: 0 0 auto;
+        }
+        button { padding: 12px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
         .btn-start { background: #27ae60; color: white; margin-top: 20px;}
         .btn-action { background: #ecf0f1; color: #2c3e50; }
         .btn-action:active { background: #bdc3c7; }
+
+        /* Small screen adjustments */
+        @media (max-height: 600px) {
+            .top-bar { padding: 8px 12px; }
+            button { padding: 10px; font-size: 13px; }
+            .grid { padding: 8px; }
+        }
     </style>
 </head>
 <body>
@@ -47,7 +83,7 @@
 
     <div id="game-screen" class="screen" style="padding:0; justify-content: flex-start;">
         <div class="top-bar">
-            <div style="font-size: 12px; text-transform: uppercase;">Clinic Reputation</div>
+            <div style="font-size: 11px; text-transform: uppercase;">Clinic Reputation</div>
             <div class="rep-bar-bg"><div id="rep-bar"></div></div>
             <div class="stats">
                 <span id="timer">00:30</span>
@@ -75,7 +111,6 @@
 </div>
 
 <script>
-    // Game Data pointing directly to your PNG files
     const cases = [
         { time: 30, ans: 'left', image: 'case1.png' },
         { time: 25, ans: 'right', image: 'case2.png' },
@@ -105,7 +140,6 @@
         }
         const current = cases[currentIndex];
         
-        // Load the actual image into the background of the card area
         const cardArea = document.getElementById('card-area');
         cardArea.style.backgroundImage = `url('${current.image}')`;
         cardArea.style.backgroundSize = 'contain';
@@ -145,7 +179,6 @@
         clearInterval(timerId);
         const current = cases[currentIndex];
         
-        // Scoring Logic
         if (direction === 'timeout') {
             score -= 30;
         } else if (direction === 'down') {
@@ -159,7 +192,6 @@
         updateScoreBar();
         currentIndex++;
         
-        // Brief pause before next card so player sees the score change
         setTimeout(loadCase, 250); 
     }
 
@@ -170,10 +202,9 @@
         const bar = document.getElementById('rep-bar');
         bar.style.width = score + '%';
         
-        // Color changes based on health
-        if (score < 40) bar.style.background = '#e74c3c'; // Red
-        else if (score < 80) bar.style.background = '#f1c40f'; // Yellow
-        else bar.style.background = '#27ae60'; // Green
+        if (score < 40) bar.style.background = '#e74c3c'; 
+        else if (score < 80) bar.style.background = '#f1c40f'; 
+        else bar.style.background = '#27ae60'; 
     }
 
     function endGame() {
@@ -196,7 +227,6 @@
     let startX = 0, startY = 0;
     const cardArea = document.getElementById('card-area');
 
-    // Mobile Touch
     cardArea.addEventListener('touchstart', e => {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
@@ -208,7 +238,6 @@
         startX = 0; startY = 0;
     });
 
-    // Desktop Mouse Drag
     cardArea.addEventListener('mousedown', e => {
         startX = e.clientX;
         startY = e.clientY;
@@ -224,14 +253,11 @@
         let dx = ex - sx;
         let dy = ey - sy;
         
-        // Must swipe at least 40 pixels to register
         if (Math.abs(dx) < 40 && Math.abs(dy) < 40) return; 
         
         if (Math.abs(dx) > Math.abs(dy)) {
-            // Horizontal swipe
             makeChoice(dx > 0 ? 'right' : 'left');
         } else {
-            // Vertical swipe
             makeChoice(dy > 0 ? 'down' : 'up');
         }
     }
