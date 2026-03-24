@@ -3,623 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dental Indirect Vision Trainer - Pro V9 Modified (Timed Challenge)</title>
+    <title>Swipe Right on the Bite</title>
     <style>
         :root {
-            --bg-color: #050505;
-            --pad-bg: #111115;
-            --accent-color: #3b82f6;
-            --mirror-color: #60a5fa;
-            --drill-color: #ef4444;
+            --bg-color: #f4f7f6;
+            --primary: #2c3e50;
+            --correct: #27ae60;
+            --wrong: #e74c3c;
+            --neutral: #95a5a6;
         }
-
         body {
-            margin: 0; padding: 0;
-            background-color: #000; 
-            color: #e5e7eb;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            touch-action: none; 
-            user-select: none;
-            -webkit-user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        #game-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            max-width: calc(100vh * 2);
-            max-height: calc(100vw * 0.5);
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             display: flex;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none; /* Prevents mobile scrolling while swiping */
+        }
+        #game-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            max-height: 800px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
             overflow: hidden;
         }
-
-        .control-panel {
-            width: 20%; height: 100%;
-            background: var(--pad-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            position: relative; z-index: 10;
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
         }
-
-        .settings-container {
-            position: absolute; top: 5%;
-            width: 85%; text-align: center;
+        .screen.active {
+            display: flex;
         }
-
-        .panel-label {
-            font-size: clamp(0.6rem, 1.5vw, 0.8rem); font-weight: bold;
-            text-transform: uppercase; letter-spacing: 1px;
-            color: #888; margin-bottom: 8px;
+        /* Top Bar */
+        #top-bar {
+            width: 100%;
+            padding: 15px 20px;
+            box-sizing: border-box;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-
-        .sensitivity-slider { width: 100%; cursor: pointer; accent-color: var(--accent-color); }
-        .sensitivity-value { font-size: clamp(0.6rem, 1.5vw, 0.8rem); color: var(--accent-color); margin-top: 4px; }
-
-        .joystick-base {
-            width: 60%; 
-            aspect-ratio: 1 / 1; 
-            border-radius: 50%; background: rgba(255,255,255,0.05);
-            border: 2px solid rgba(255,255,255,0.1);
-            position: relative; margin-top: 20%;
+        #rep-bar-container {
+            width: 100%;
+            height: 15px;
+            background: #444;
+            border-radius: 10px;
+            overflow: hidden;
         }
-
-        .joystick-knob {
-            width: 40%; height: 40%;
-            border-radius: 50%; position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
+        #rep-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--correct);
+            transition: width 0.3s ease, background 0.3s ease;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        #timer {
+            transition: color 0.3s ease;
+        }
+        .danger-time {
+            color: var(--wrong) !important;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        /* Main Image Area */
+        #image-area {
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #eee;
+            position: relative;
+        }
+        #patient-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            user-select: none;
+            pointer-events: none;
+        }
+        /* Controls / Legend */
+        #controls {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background: #ecf0f1;
+            color: var(--primary);
             transition: background 0.2s;
         }
-
-        #mirror-pad .joystick-knob { background: var(--mirror-color); box-shadow: 0 0 15px var(--mirror-color); }
-        #drill-pad .joystick-knob { background: var(--drill-color); box-shadow: 0 0 15px var(--drill-color); }
-
-        #viewport {
-            width: 60%; height: 100%;
-            position: relative;
-            background: radial-gradient(circle at center, #2a1212 0%, #050505 100%);
-            overflow: hidden;
+        .btn:active { background: #bdc3c7; }
+        
+        /* Typography */
+        h1 { font-size: 1.5rem; color: var(--primary); margin-bottom: 10px; }
+        p { font-size: 1rem; color: #555; line-height: 1.5; margin-bottom: 20px; }
+        .start-btn, .restart-btn {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            background: var(--correct);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
         }
-
-        canvas { display: block; width: 100%; height: 100%; }
-
-        .ui-overlay {
-            position: absolute; top: 4%; left: 3%;
-            pointer-events: none; background: rgba(0, 0, 0, 0.7);
-            padding: 2% 4%; border-radius: 12px;
-            backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .stats { margin-bottom: 5px; font-weight: bold; font-size: clamp(0.8rem, 2vw, 1.2rem); }
-        .timer-alert { color: var(--drill-color); }
-
-        .msg-box {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(10, 10, 15, 0.95);
-            padding: 5% 8%; border-radius: 16px;
-            text-align: center; border: 2px solid var(--accent-color);
-            z-index: 100; width: 70%; max-width: 450px;
-        }
-
-        #game-over-screen {
-            display: none;
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(200, 210, 220, 0.3);
-            backdrop-filter: blur(12px); 
-            z-index: 200;
-            align-items: center; justify-content: center;
-        }
-
-        .result-box {
-            background: rgba(10, 10, 15, 0.95);
-            padding: 6% 8%; border-radius: 16px; text-align: center;
-            border: 3px solid var(--drill-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 70%; max-width: 400px;
-        }
-
-        #result-icon { font-size: clamp(3rem, 8vw, 5rem); margin-bottom: 10px; line-height: 1; }
-        .result-box h2 { margin: 10px 0; font-size: clamp(1.5rem, 4vw, 2rem); }
-        .result-box p { color: #aaa; margin-bottom: 20px; font-size: clamp(0.9rem, 2vw, 1.1rem); }
-
-        .btn {
-            background: var(--accent-color); color: white;
-            border: none; padding: 12px 24px;
-            border-radius: 8px; cursor: pointer;
-            margin-top: 15px; font-weight: bold; font-size: clamp(0.9rem, 2vw, 1.1rem);
-            transition: transform 0.1s, background 0.2s;
-            pointer-events: auto; 
-        }
-        .btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
-<div id="game-wrapper">
-    <div class="control-panel" id="mirror-pad">
-        <div class="settings-container">
-            <div class="panel-label">Mirror Sens</div>
-            <input type="range" id="mirror-sens" class="sensitivity-slider" min="0" max="100" value="100">
-            <div class="sensitivity-value" id="mirror-sens-val">100%</div>
-        </div>
-        <div class="joystick-base" id="mirror-base"><div class="joystick-knob" id="mirror-knob"></div></div>
+<div id="game-container">
+    
+    <!-- LEVEL 0: TUTORIAL SCREEN -->
+    <div id="screen-start" class="screen active">
+        <h1>Swipe Right on the Bite</h1>
+        <p>Welcome! Swipe <strong>LEFT</strong> for extraction, <strong>RIGHT</strong> for IPR, <strong>UP</strong> to choose nothing, and <strong>DOWN</strong> if you don't know.</p>
+        <p>You're on the clock. Don't mess up their smiles!</p>
+        <button class="start-btn" onclick="startGame()">Start Clinic</button>
     </div>
 
-    <div id="viewport">
-        <canvas id="gameCanvas"></canvas>
-        <div class="ui-overlay">
-            <div class="stats" id="time-display">Time Left: 60s</div>
-            <div class="stats" id="score-display">Cavities Cleared: 0 / 10</div>
-            <div style="font-size: clamp(0.5rem, 1vw, 0.7rem); opacity: 0.7;">Anatomical Trainer V10</div>
-        </div>
-        
-        <div class="msg-box" id="start-screen">
-            <h2 style="font-size: clamp(1.2rem, 3vw, 2rem); margin-top:0;">Time Challenge!</h2>
-            <p style="font-size: clamp(0.8rem, 2vw, 0.95rem); color: #aaa; text-align: left;">
-                1. Drill movement inverts inside the mirror.<br><br>
-                2. <b>Goal:</b> Clear at least <b>10 cavities</b> in <b>60 seconds</b>.<br><br>
-                3. Move fast, or the mirror fogs up!
-            </p>
-            <button id="start-btn" class="btn">Commence</button>
-        </div>
-
-        <div id="game-over-screen">
-            <div class="result-box" id="result-box">
-                <div id="result-icon">👎</div>
-                <h2 id="result-title">Challenge Failed</h2>
-                <p id="result-desc">You didn't clear enough cavities.</p>
-                <button id="restart-btn" class="btn">Play Again</button>
+    <!-- GAME SCREEN -->
+    <div id="screen-game" class="screen" style="padding: 0; justify-content: flex-start;">
+        <div id="top-bar">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Clinic Rep</div>
+            <div id="rep-bar-container">
+                <div id="rep-bar"></div>
+            </div>
+            <div class="stats-row">
+                <span id="timer">⏱ 00:30</span>
+                <span id="case-counter">Case 1/5</span>
             </div>
         </div>
+
+        <div id="image-area">
+            <!-- These are placeholders. You will swap these URLs with your actual image files -->
+            <img id="patient-image" src="" alt="Patient Case">
+        </div>
+
+        <div id="controls">
+            <button class="btn" onclick="handleInput('up')">⬆️ Nothing</button>
+            <button class="btn" onclick="handleInput('down')">⬇️ Don't Know</button>
+            <button class="btn" onclick="handleInput('left')">⬅️ Extract</button>
+            <button class="btn" onclick="handleInput('right')">IPR ➡️</button>
+        </div>
     </div>
 
-    <div class="control-panel" id="drill-pad">
-        <div class="settings-container">
-            <div class="panel-label">Drill Sens</div>
-            <input type="range" id="drill-sens" class="sensitivity-slider" min="0" max="100" value="100">
-            <div class="sensitivity-value" id="drill-sens-val">100%</div>
-        </div>
-        <div class="joystick-base" id="drill-base"><div class="joystick-knob" id="drill-knob"></div></div>
+    <!-- END SCREEN -->
+    <div id="screen-end" class="screen">
+        <h1 id="end-title">Game Over</h1>
+        <p id="end-desc"></p>
+        <h2 style="margin-bottom: 5px;">Final Score: <span id="final-score">0</span>%</h2>
+        <p style="font-size: 12px; color: #888; margin-bottom: 30px;">(Pass mark is 80%)</p>
+        <button class="restart-btn" onclick="resetGame()">Play Again</button>
     </div>
+
 </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const viewport = document.getElementById('viewport');
-    
-    let gameActive = false;
+    // Game Data Configuration
+    const cases = [
+        { time: 30, answer: 'left', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+1:+Severe+Crowding' },
+        { time: 25, answer: 'right', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+2:+Deep+Bite' },
+        { time: 20, answer: 'left', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+3:+Missing+Canines' },
+        { time: 15, answer: 'right', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+4:+Mild+Class+III' },
+        { time: 10, answer: 'up', image: 'https://via.placeholder.com/1080x1350/e0e0e0/333333?text=Case+5:+Generalized+Spacing' }
+    ];
+
+    // Variables
+    let currentCaseIndex = 0;
     let score = 0;
-    const requiredScore = 10;
-    let timeLeft = 60;
     let timerInterval;
+    let timeRemaining;
 
-    let mirrorSens = 1.0;
-    let drillSens = 1.0;
+    // DOM Elements
+    const screenStart = document.getElementById('screen-start');
+    const screenGame = document.getElementById('screen-game');
+    const screenEnd = document.getElementById('screen-end');
+    const patientImage = document.getElementById('patient-image');
+    const repBar = document.getElementById('rep-bar');
+    const timerDisplay = document.getElementById('timer');
+    const caseCounter = document.getElementById('case-counter');
 
-    const arch = { teeth: [] };
-    const joysticks = {
-        mirror: { id: null, active: false, dX: 0, dY: 0 },
-        drill: { id: null, active: false, dX: 0, dY: 0 }
-    };
-
-    const mirror = { x: 0, y: 0, radius: 50, baseSpeed: 5 }; 
-    const drill = { x: 0, y: 0, baseSpeed: 5, isDrilling: false, waitingForFlip: false, wasInside: undefined, entryX: 0, entryY: 0 };
-
-    function initArch() {
-        arch.teeth = [];
-        const centerX = canvas.width / 2;
+    function startGame() {
+        screenStart.classList.remove('active');
+        screenEnd.classList.remove('active');
+        screenGame.classList.add('active');
         
-        // Pushed the arch significantly lower to clear the UI
-        const centerY = canvas.height * 0.35; 
-        
-        // Narrowed the arch (0.24) and slightly shortened it (0.45) to pack teeth together
-        const a = canvas.width * 0.24; 
-        const b = canvas.height * 0.45; 
+        currentCaseIndex = 0;
+        score = 0;
+        updateRepBar();
+        loadCase();
+    }
 
-        for (let i = 0; i < 16; i++) {
-            const t = Math.PI - (i / 15) * Math.PI; 
-            const tx = centerX + a * Math.cos(t);
-            const ty = centerY + b * Math.sin(t);
-            
-            let type;
-            if (i >= 6 && i <= 9) type = "anterior"; 
-            else if (i === 5 || i === 10) type = "canine"; 
-            else if (i === 3 || i === 4 || i === 11 || i === 12) type = "premolar"; 
-            else type = "molar"; 
-            
-            arch.teeth.push({ x: tx, y: ty, type, angle: t, cavities: [] });
+    function loadCase() {
+        if (currentCaseIndex >= cases.length) {
+            endGame();
+            return;
         }
-        generateCavities();
-    }
 
-    function generateCavities() {
-        arch.teeth.forEach(t => t.cavities = []);
-        for (let i = 0; i < 3; i++) {
-            const availableTeeth = arch.teeth.filter(t => t.cavities.length < 2);
-            if (availableTeeth.length === 0) break;
-            
-            const randomTooth = availableTeeth[Math.floor(Math.random() * availableTeeth.length)];
-            const points = [];
-            
-            // Scaled up the standard cavity size to match the bigger teeth
-            const baseRad = canvas.width * 0.018; 
-            
-            for (let p = 0; p < 8; p++) {
-                const angle = (p / 8) * Math.PI * 2;
-                const r = baseRad * (0.8 + Math.random() * 0.4); 
-                points.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r });
-            }
-            randomTooth.cavities.push({ points, health: 100, cleared: false, radius: baseRad });
-        }
-    }
-
-    function updateJoystick(clientPos, base, knob, stickData) {
-        const rect = base.getBoundingClientRect();
-        const maxDist = rect.width / 2; 
+        const currentCase = cases[currentCaseIndex];
+        patientImage.src = currentCase.image;
+        caseCounter.innerText = `Case ${currentCaseIndex + 1}/5`;
         
-        const dx = clientPos.clientX - (rect.left + rect.width / 2);
-        const dy = clientPos.clientY - (rect.top + rect.height / 2);
-        const dist = Math.min(Math.hypot(dx, dy), maxDist);
-        const angle = Math.atan2(dy, dx);
+        timeRemaining = currentCase.time;
+        updateTimerDisplay();
         
-        if (dist < maxDist * 0.15) {
-            stickData.dX = 0;
-            stickData.dY = 0;
-        } else {
-            const normalizedDist = dist / maxDist;
-            const curvedDist = Math.pow(normalizedDist, 1.5); 
-            
-            stickData.dX = Math.cos(angle) * curvedDist;
-            stickData.dY = Math.sin(angle) * curvedDist;
-        }
-        
-        const finalX = Math.cos(angle) * dist;
-        const finalY = Math.sin(angle) * dist;
-        knob.style.transform = `translate(calc(-50% + ${finalX}px), calc(-50% + ${finalY}px))`;
-    }
-
-    function setupJoystick(padId, baseId, knobId, stickData) {
-        const pad = document.getElementById(padId);
-        const base = document.getElementById(baseId);
-        const knob = document.getElementById(knobId);
-
-        const onStart = (e) => {
-            if (!gameActive || e.target.type === 'range') return;
-            e.preventDefault();
-            stickData.active = true;
-            const touch = e.type === 'touchstart' ? e.changedTouches[0] : e;
-            if (e.type === 'touchstart') stickData.id = touch.identifier;
-            updateJoystick(touch, base, knob, stickData);
-        };
-
-        const onMove = (e) => {
-            if (!stickData.active) return;
-            let touch = e.type === 'touchmove' ? Array.from(e.changedTouches).find(t => t.identifier === stickData.id) : e;
-            if (touch) updateJoystick(touch, base, knob, stickData);
-        };
-
-        const onEnd = (e) => {
-            if (e.type === 'touchend') {
-               let touchEnded = Array.from(e.changedTouches).find(t => t.identifier === stickData.id);
-               if(!touchEnded) return; 
-            }
-            stickData.active = false; stickData.dX = 0; stickData.dY = 0;
-            knob.style.transform = `translate(-50%, -50%)`;
-        };
-
-        pad.addEventListener('touchstart', onStart, {passive: false});
-        window.addEventListener('touchmove', onMove, {passive: false});
-        window.addEventListener('touchend', onEnd);
-        pad.addEventListener('mousedown', onStart);
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onEnd);
-    }
-
-    setupJoystick('mirror-pad', 'mirror-base', 'mirror-knob', joysticks.mirror);
-    setupJoystick('drill-pad', 'drill-base', 'drill-knob', joysticks.drill);
-
-    document.getElementById('mirror-sens').oninput = (e) => {
-        mirrorSens = e.target.value / 100;
-        document.getElementById('mirror-sens-val').innerText = e.target.value + '%';
-    };
-    document.getElementById('drill-sens').oninput = (e) => {
-        drillSens = e.target.value / 100;
-        document.getElementById('drill-sens-val').innerText = e.target.value + '%';
-    };
-
-    function startTimer() {
-        const timeDisplay = document.getElementById('time-display');
         clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            timeLeft--;
-            timeDisplay.innerText = `Time Left: ${timeLeft}s`;
-            
-            if (timeLeft <= 10) {
-                timeDisplay.classList.add('timer-alert');
-            }
-            
-            if (timeLeft <= 0) {
-                endGame();
-            }
-        }, 1000);
+        timerInterval = setInterval(countdown, 1000);
+    }
+
+    function countdown() {
+        timeRemaining--;
+        updateTimerDisplay();
+
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            // Treat timeout as a wrong answer
+            updateScore(-30);
+            nextCase();
+        }
+    }
+
+    function updateTimerDisplay() {
+        timerDisplay.innerText = `⏱ 00:${timeRemaining < 10 ? '0' : ''}${timeRemaining}`;
+        if (timeRemaining <= 5) {
+            timerDisplay.classList.add('danger-time');
+        } else {
+            timerDisplay.classList.remove('danger-time');
+        }
+    }
+
+    function handleInput(direction) {
+        clearInterval(timerInterval);
+        const correctAnswer = cases[currentCaseIndex].answer;
+
+        if (direction === 'down') {
+            updateScore(-5); // I don't know
+        } else if (direction === correctAnswer) {
+            updateScore(20); // Correct
+        } else {
+            updateScore(-30); // Wrong
+        }
+
+        nextCase();
+    }
+
+    function updateScore(points) {
+        score += points;
+        if (score > 100) score = 100;
+        if (score < 0) score = 0;
+        updateRepBar();
+    }
+
+    function updateRepBar() {
+        repBar.style.width = `${score}%`;
+        if (score < 40) {
+            repBar.style.background = 'var(--wrong)';
+        } else if (score < 80) {
+            repBar.style.background = '#f1c40f'; // Yellow warning
+        } else {
+            repBar.style.background = 'var(--correct)';
+        }
+    }
+
+    function nextCase() {
+        currentCaseIndex++;
+        // Short delay so player can see the rep bar move before the next image loads
+        setTimeout(loadCase, 400); 
     }
 
     function endGame() {
-        gameActive = false;
         clearInterval(timerInterval);
+        screenGame.classList.remove('active');
+        screenEnd.classList.add('active');
         
-        const gameOverScreen = document.getElementById('game-over-screen');
-        const resultBox = document.getElementById('result-box');
-        const resultIcon = document.getElementById('result-icon');
-        const resultTitle = document.getElementById('result-title');
-        const resultDesc = document.getElementById('result-desc');
+        document.getElementById('final-score').innerText = score;
 
-        if (score >= requiredScore) {
-            resultIcon.innerText = "👍";
-            resultTitle.innerText = "Challenge Passed!";
-            resultDesc.innerText = `Amazing precision! You cleared ${score} cavities.`;
-            resultBox.style.borderColor = "#10b981"; 
+        if (score >= 80) { // 4 out of 5 correct minimum
+            document.getElementById('end-title').innerText = "Fantastic!";
+            document.getElementById('end-desc').innerText = "You're an Ortho Wizard! Your schedule is booked out for months and patients love your treatment plans.";
         } else {
-            resultIcon.innerText = "👎";
-            resultTitle.innerText = "Challenge Failed!";
-            resultDesc.innerText = `You only cleared ${score} out of ${requiredScore} cavities.`;
-            resultBox.style.borderColor = "var(--drill-color)"; 
+            document.getElementById('end-title').innerText = "Poor!";
+            document.getElementById('end-desc').innerText = "Yikes. Board of Dentistry is on line 1. You extracted teeth that just needed a little polishing!";
         }
-
-        gameOverScreen.style.display = 'flex';
-        
-        joysticks.mirror.active = false; joysticks.mirror.dX = 0; joysticks.mirror.dY = 0;
-        document.getElementById('mirror-knob').style.transform = `translate(-50%, -50%)`;
-        joysticks.drill.active = false; joysticks.drill.dX = 0; joysticks.drill.dY = 0;
-        document.getElementById('drill-knob').style.transform = `translate(-50%, -50%)`;
     }
 
-    function startGame() {
-        score = 0;
-        timeLeft = 60;
-        document.getElementById('score-display').innerText = `Cavities Cleared: ${score} / ${requiredScore}`;
-        document.getElementById('time-display').innerText = `Time Left: ${timeLeft}s`;
-        document.getElementById('time-display').classList.remove('timer-alert');
-        
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('game-over-screen').style.display = 'none';
-        
-        gameActive = true;
-        
-        mirror.x = canvas.width / 2; mirror.y = canvas.height / 2;
-        drill.x = canvas.width / 2 + (canvas.width * 0.1); 
-        drill.y = canvas.height / 2 + (canvas.height * 0.2);
-        
-        startTimer();
-        requestAnimationFrame(update);
+    function resetGame() {
+        startGame();
     }
 
-    const startBtn = document.getElementById('start-btn');
-    startBtn.onclick = (e) => { e.preventDefault(); startGame(); };
-    startBtn.ontouchstart = (e) => { e.preventDefault(); startGame(); };
+    // --- SWIPE DETECTION LOGIC ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const imageArea = document.getElementById('image-area');
 
-    const restartBtn = document.getElementById('restart-btn');
-    restartBtn.onclick = (e) => { e.preventDefault(); generateCavities(); startGame(); };
-    restartBtn.ontouchstart = (e) => { e.preventDefault(); generateCavities(); startGame(); };
+    imageArea.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, false);
 
-    function update() {
-        if (!gameActive) return;
+    imageArea.addEventListener('touchend', function(e) {
+        let touchEndX = e.changedTouches[0].screenX;
+        let touchEndY = e.changedTouches[0].screenY;
+        handleSwipeGesture(touchStartX, touchStartY, touchEndX, touchEndY);
+    }, false);
 
-        const currentMirrorSpeed = (canvas.width * 0.007) * mirrorSens;
-        const currentDrillSpeed = (canvas.width * 0.007) * drillSens;
-        const currentMirrorRadius = canvas.width * 0.08;
-        mirror.radius = currentMirrorRadius;
+    // Mouse support for desktop testing
+    let isMouseDown = false;
+    imageArea.addEventListener('mousedown', function(e) {
+        isMouseDown = true;
+        touchStartX = e.clientX;
+        touchStartY = e.clientY;
+    });
 
-        if (joysticks.mirror.active) {
-            mirror.x += joysticks.mirror.dX * currentMirrorSpeed;
-            mirror.y += joysticks.mirror.dY * currentMirrorSpeed;
-        }
+    imageArea.addEventListener('mouseup', function(e) {
+        if (!isMouseDown) return;
+        isMouseDown = false;
+        let touchEndX = e.clientX;
+        let touchEndY = e.clientY;
+        handleSwipeGesture(touchStartX, touchStartY, touchEndX, touchEndY);
+    });
 
-        const isInsideMirror = Math.hypot(drill.x - mirror.x, drill.y - mirror.y) < mirror.radius;
-        if (drill.wasInside === undefined) drill.wasInside = isInsideMirror;
+    function handleSwipeGesture(startX, startY, endX, endY) {
+        let deltaX = endX - startX;
+        let deltaY = endY - startY;
+        let minSwipeDistance = 50; // Needs to be an intentional swipe
 
-        if (isInsideMirror !== drill.wasInside) {
-            drill.waitingForFlip = true;
-            drill.entryX = joysticks.drill.dX;
-            drill.entryY = joysticks.drill.dY;
-        }
-        drill.wasInside = isInsideMirror;
-
-        if (joysticks.drill.active) {
-            if (drill.waitingForFlip) {
-                let dot = joysticks.drill.dX * drill.entryX + joysticks.drill.dY * drill.entryY;
-                if (dot <= 0.2) drill.waitingForFlip = false; 
-            }
-
-            let moveX = 0, moveY = 0;
-            if (!drill.waitingForFlip) {
-                moveX = joysticks.drill.dX * currentDrillSpeed;
-                moveY = joysticks.drill.dY * currentDrillSpeed;
-            }
-
-            if (isInsideMirror) {
-                drill.x -= moveX;
-                drill.y -= moveY;
-            } else {
-                drill.x += moveX;
-                drill.y += moveY;
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            // Horizontal Swipe
+            if (Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) handleInput('right');
+                else handleInput('left');
             }
         } else {
-            drill.waitingForFlip = false;
-        }
-        
-        drill.isDrilling = joysticks.drill.active;
-
-        mirror.x = Math.max(mirror.radius, Math.min(canvas.width - mirror.radius, mirror.x));
-        mirror.y = Math.max(mirror.radius, Math.min(canvas.height - mirror.radius, mirror.y));
-
-        let activeCavities = 0;
-        arch.teeth.forEach(tooth => {
-            tooth.cavities.forEach(c => {
-                if (!c.cleared) {
-                    activeCavities++;
-                    const dTarget = Math.hypot(drill.x - tooth.x, drill.y - tooth.y);
-                    // Adjusted collision radius to account for the visibly larger drill
-                    if (dTarget < c.radius + (canvas.width * 0.015) && drill.isDrilling && isInsideMirror) {
-                        c.health -= 1.8;
-                        createParticles(drill.x, drill.y);
-                        if (c.health <= 0) {
-                            c.cleared = true; score++;
-                            document.getElementById('score-display').innerText = `Cavities Cleared: ${score} / ${requiredScore}`;
-                        }
-                    }
-                }
-            });
-        });
-
-        if (activeCavities === 0) generateCavities();
-        draw();
-        requestAnimationFrame(update);
-    }
-
-    function drawTooth(c, x, y, type, isBright, angle) {
-        c.save(); 
-        c.translate(x, y);
-        c.rotate(angle - Math.PI/2); 
-        
-        // Increased tooth scale to ensure they touch/overlap realistically
-        const scale = canvas.width * 0.003; 
-        c.scale(scale, scale);
-        
-        c.fillStyle = isBright ? '#ffffff' : '#222';
-        c.strokeStyle = isBright ? '#ccc' : '#111';
-        c.lineWidth = 1.5 / scale; 
-        
-        c.beginPath();
-        if (type === "anterior") {
-            c.moveTo(-10, -12); c.quadraticCurveTo(0, -16, 10, -12);
-            c.lineTo(12, 10); c.quadraticCurveTo(0, 14, -12, 10); c.closePath();
-            c.fill(); c.stroke();
-            c.beginPath(); c.moveTo(-8, -8); c.lineTo(-8, 8); c.moveTo(8, -8); c.lineTo(8, 8); 
-            c.strokeStyle = isBright ? 'rgba(0,0,0,0.1)' : '#000'; c.stroke();
-        } else if (type === "canine") {
-            c.moveTo(-9, -12); c.quadraticCurveTo(0, -16, 9, -12);
-            c.lineTo(11, 4); c.lineTo(0, 14); c.lineTo(-11, 4); c.closePath();
-            c.fill(); c.stroke();
-            c.beginPath(); c.moveTo(0, -10); c.lineTo(0, 10); 
-            c.strokeStyle = isBright ? 'rgba(0,0,0,0.1)' : '#000'; c.stroke();
-        } else if (type === "premolar") {
-            c.ellipse(0, 0, 14, 10, 0, 0, Math.PI*2);
-            c.fill(); c.stroke();
-            c.beginPath(); c.moveTo(-8, 0); c.lineTo(8, 0); 
-            c.strokeStyle = isBright ? 'rgba(0,0,0,0.2)' : '#000'; c.stroke();
-        } else {
-            const s = 15;
-            c.moveTo(-s, -s/2); c.quadraticCurveTo(-s, -s, -s/2, -s);
-            c.quadraticCurveTo(0, -s-2, s/2, -s); c.quadraticCurveTo(s, -s, s, -s/2);
-            c.quadraticCurveTo(s+2, 0, s, s/2); c.quadraticCurveTo(s, s, s/2, s);
-            c.quadraticCurveTo(0, s+2, -s/2, s); c.quadraticCurveTo(-s, s, -s, s/2); c.closePath();
-            c.fill(); c.stroke();
-            c.beginPath(); c.moveTo(-s+6, 0); c.lineTo(s-6, 0); c.moveTo(0, -s+6); c.lineTo(0, s-6); 
-            c.strokeStyle = isBright ? 'rgba(0,0,0,0.2)' : '#000'; c.stroke();
-        }
-        c.restore();
-    }
-
-    function drawCavities(c, x, y, isBright, cavities, angle) {
-        c.save(); 
-        c.translate(x, y);
-        c.rotate(angle - Math.PI/2); 
-
-        cavities.forEach(cav => {
-            if (!cav.cleared) {
-                c.fillStyle = isBright ? '#2b1305' : '#050505';
-                const scale = 0.3 + 0.7 * (Math.max(0, cav.health) / 100);
-
-                c.beginPath(); 
-                c.moveTo(cav.points[0].x * scale, cav.points[0].y * scale);
-                for(let i = 1; i < cav.points.length; i++) {
-                    c.lineTo(cav.points[i].x * scale, cav.points[i].y * scale);
-                }
-                c.closePath(); 
-                c.fill();
+            // Vertical Swipe
+            if (Math.abs(deltaY) > minSwipeDistance) {
+                if (deltaY > 0) handleInput('down');
+                else handleInput('up');
             }
-        });
-        c.restore();
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        arch.teeth.forEach(t => drawTooth(ctx, t.x, t.y, t.type, false, t.angle));
-        arch.teeth.forEach(t => drawCavities(ctx, t.x, t.y, false, t.cavities, t.angle));
-        
-        ctx.save();
-        ctx.beginPath(); ctx.arc(mirror.x, mirror.y, mirror.radius, 0, Math.PI * 2); ctx.clip();
-        ctx.fillStyle = '#1c1919'; ctx.fillRect(0,0, canvas.width, canvas.height);
-        
-        arch.teeth.forEach(t => drawTooth(ctx, t.x, t.y, t.type, true, t.angle));
-        arch.teeth.forEach(t => drawCavities(ctx, t.x, t.y, true, t.cavities, t.angle));
-        ctx.restore();
-
-        ctx.strokeStyle = '#aaa'; ctx.lineWidth = canvas.width * 0.01;
-        ctx.beginPath(); ctx.arc(mirror.x, mirror.y, mirror.radius, 0, Math.PI * 2); ctx.stroke();
-
-        updateParticles(); drawParticles(ctx);
-
-        drawDrill(ctx, drill.x, drill.y);
-    }
-
-    function drawDrill(c, x, y) {
-        c.save(); 
-        c.translate(x, y);
-        c.rotate(-Math.PI/4);
-        
-        // Increased drill size by roughly 2x for much better realism
-        const drillScale = canvas.width * 0.002;
-        
-        c.scale(drillScale, drillScale);
-        c.fillStyle = '#999'; c.fillRect(-2, -60, 4, 55);
-        c.beginPath(); c.moveTo(-2, -5); c.lineTo(2, -5); c.lineTo(1, -2); c.lineTo(-1, -2); c.fill();
-        
-        c.fillStyle = drill.waitingForFlip ? '#ffcc00' : '#eee';
-        c.beginPath(); c.arc(0, 0, 4, 0, Math.PI * 2); c.fill();
-        
-        if (drill.isDrilling && !drill.waitingForFlip) {
-            c.strokeStyle = 'rgba(200, 255, 255, 0.8)'; c.lineWidth = 1.5;
-            c.beginPath(); c.arc(0, 0, 6, 0, Math.PI*2); c.stroke();
-            c.beginPath(); c.arc(0, 0, 8, 0, Math.PI*2); c.stroke();
         }
-        c.restore();
     }
-
-    let particles = [];
-    function createParticles(x, y) {
-        for(let i=0; i<3; i++) particles.push({x, y, vx:(Math.random()-0.5)*9, vy:(Math.random()-0.5)*9, l:1});
-    }
-    function updateParticles() {
-        particles.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.l-=0.07; });
-        particles = particles.filter(p => p.l > 0);
-    }
-    function drawParticles(c) {
-        particles.forEach(p => { c.fillStyle=`rgba(255,255,255,${p.l})`; c.fillRect(p.x, p.y, 2, 2); });
-    }
-
-    function resize() { 
-        if(!viewport) return;
-        canvas.width = viewport.clientWidth; 
-        canvas.height = viewport.clientHeight; 
-        initArch(); 
-        if(!gameActive) draw(); 
-    }
-    
-    window.addEventListener('resize', resize); 
-    resize();
 </script>
+
 </body>
 </html>
